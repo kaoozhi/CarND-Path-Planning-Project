@@ -156,10 +156,4 @@ inline vector<double> getXY(double s, double d, const vector<double> &maps_s,
 
   return {x,y};
 }
-
-
-
-
-
-
 #endif  // HELPERS_H

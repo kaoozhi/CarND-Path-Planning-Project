@@ -8,8 +8,8 @@
 // #include "helpers.h"
 // #include "cost.h"
 const double SPEED_LIMIT = 49.5; //mph
-const double SPEED_INCREMENT = .224; //mph/0.02s->5m/s2
-const double SPEED_INCREMENT_LIMIT = .224*1.2; //mph/0.02s->10m/s2
+const double SPEED_INCREMENT = .224*.95; //mph/0.02s->5m/s2
+const double SPEED_INCREMENT_LIMIT = .224; //mph/0.02s->10m/s2
 const double BUFFER_DISTANCE_AHEAD = 35; //m
 const double BUFFER_DISTANCE_BEHIND = 20; //m
 const double SECURITE_DISTANCE = 10; //m
@@ -223,7 +223,8 @@ double Vehicle::get_kinematics(int lane) {
 
     // std::cout<<"Vehicle behind, at"<<vehicle_ahead.gap<<"m"<<std::endl;
 
-    return std::max(new_vel,7.0);
+    return std::max(new_vel,1.0);
+    // return new_vel;
     
 }
 
@@ -254,7 +255,7 @@ bool Vehicle::vehicle_close_around(int lane)
         }
     }
 
-    return (min_gap >10);
+    return (min_gap < 10);
 
 }
 
