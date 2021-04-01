@@ -30,34 +30,25 @@ class Vehicle{
         
         nlohmann::json sensor_fusion;
 
-        struct prediction{bool found; double vel; double gap;};
+        struct prediction{bool found; double vel; double gap; double s; double d;};
 
 
         // minimum duration to keep in current lane before lane change
         // Vehicle(double s_, double v_, double d_, double x_, double y_, double yaw_);
         Vehicle();
         virtual ~Vehicle();
-        double get_kinematics(int lane);
-        void update(double s_, double v_, double d_, double x_, double y_, double yaw_, int prev_path_size_, nlohmann::json sensor_fusion_);
-        double get_ahead_speed(int lane);
-        Vehicle::prediction get_vehicle_ahead(int lane);
-        Vehicle::prediction get_vehicle_behind(int lane);
-        bool vehicle_close_around(int lane);
-
+        double get_kinematics(const int& lane);
+        void update(const double& s_, const double& v_, const double& d_, const double& x_, const double& y_, const double& yaw_, const int& prev_path_size_, const nlohmann::json& sensor_fusion_);
+        // double get_ahead_speed(const int& lane);
+        Vehicle::prediction get_vehicle_ahead(const int& lane);
+        // Vehicle::prediction get_vehicle_ahead_debug(const int& lane);
+        Vehicle::prediction get_vehicle_behind(const int& lane);
+        // bool vehicle_close_around(const int& lane);
+        // bool check_collision(const int& lane);
         int get_best_lane();
-        // int get_current_lane();
-        // void successor_states();
-        // void next_state(FSM new_state);
         void cost_function();
         
-        // void get_keep_lane_duration();
-        // int keep_lane_duration = 0; 
-    // private:
-        // FSM state;
         
-        
-
-
 };
 
 #endif  // VEHICLE_H
