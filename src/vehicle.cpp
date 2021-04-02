@@ -7,8 +7,8 @@
 #include <iterator>
 
 const double SPEED_LIMIT = 49.5; //mph
-const double SPEED_INCREMENT = .224*0.9; //mph/0.02s->5m/s2
-const double SPEED_INCREMENT_LIMIT = .224; //mph/0.02s->10m/s2
+const double SPEED_INCREMENT = .224*0.95; //mph/0.02s->5m/s2
+const double SPEED_INCREMENT_LIMIT = .224*1.05; //mph/0.02s->10m/s2
 const double BUFFER_DISTANCE_AHEAD = 35; //m
 const double BUFFER_DISTANCE_BEHIND = 10; //m
 const double SECURITE_DISTANCE = 15; //m
@@ -133,7 +133,7 @@ double Vehicle::get_kinematics(const int& lane) {
     double vel_accel = this->v + SPEED_INCREMENT;
     double vel_decel = this->v - SPEED_INCREMENT;
     double max_vel_accel_limit = this->v + SPEED_INCREMENT_LIMIT;
-    double max_vel_decel_limit = this->v - SPEED_INCREMENT_LIMIT*1.2;
+    double max_vel_decel_limit = this->v - SPEED_INCREMENT_LIMIT;
     double new_vel;
     auto vehicle_ahead = get_vehicle_ahead(lane);
     auto vehicle_behind = get_vehicle_behind(lane);
@@ -148,7 +148,7 @@ double Vehicle::get_kinematics(const int& lane) {
         if (vehicle_ahead.gap<SECURITE_DISTANCE)
             {
                 // new_vel = std::max(std::min(vel_decel, vehicle_ahead.vel), max_vel_decel_limit);
-                new_vel = max_vel_decel_limit;
+                new_vel = std::max(max_vel_decel_limit, 5.0);
                 // new_vel = std::max(max_vel_decel_limit,vehicle_ahead.vel -SPEED_INCREMENT);
             }
         else if (vehicle_behind.gap < BUFFER_DISTANCE_BEHIND) 
@@ -200,8 +200,8 @@ double Vehicle::get_kinematics(const int& lane) {
 
     // std::cout<<"Vehicle behind, at"<<vehicle_ahead.gap<<"m"<<std::endl;
 
-    return std::max(new_vel,3.0);
-    // return new_vel;
+    // return std::max(new_vel,3.0);
+    return new_vel;
     
 }
 

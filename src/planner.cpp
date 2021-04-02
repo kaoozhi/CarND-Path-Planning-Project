@@ -12,20 +12,15 @@
 
 const map<Planner::FSM, int> lane_direction = {{Planner::FSM::PLCL, -1},{Planner::FSM::LCL, -1},{Planner::FSM::PLCR, 1},{Planner::FSM::LCR, 1}};
 const double EFFICIENCY_WEIGHT = 1;
-const double TRAFFIC_WEIGHT = 1;
+const double TRAFFIC_WEIGHT = 1.1;
 const double MANEUVER_WEIGHT = 0.2;
 const double REACH_GOAL_WEIGHT = 0.1;
 const double MIN_LANE_CHANGE_ON_DURATION = 4/0.02; // for 3s
 const double MIN_KEEP_LANE_ON_DURATION = 4/0.02; // for 3s
-// const double REACH_GOAL_WEIGHT = 10;
-
 const double SPEED_LIMIT = 49.5; //mph
 const double DISTANCE_IGNORE_VEHICLE_AHEAD = 100; //m
-
-
-const double SECURITE_GAP_AHEAD_LANE_CHANGE = 8;
+const double SECURITE_GAP_AHEAD_LANE_CHANGE = 10;
 const double SECURITE_GAP_BEHIND_LANE_CHANGE = 15;
-
 const double BUFFER_DISTANCE_AHEAD = 35; //m
 
 
@@ -199,16 +194,7 @@ vector<vector<double>> Planner::create_trajectory(const int& lane, const double&
 vector<Planner::FSM> Planner::successor_states()
 {
     vector<Planner::FSM> states;
-    // int min_lane_change_on_duration =150;
-    // int min_keep_lane_on_duration =100;
-
     auto vehicle_ahead= this->ego_car.get_vehicle_ahead(this->ego_car.lane);
-    
-    // if (vehicle_ahead.gap>50)
-    // {
-    //     states.push_back(Planner::FSM::KL);
-    // }    
-    // else 
 
     if(this->state == Planner::FSM::CS)
     {
@@ -216,6 +202,8 @@ vector<Planner::FSM> Planner::successor_states()
     }
     else if(this->state == Planner::FSM::KL) {
         states.push_back(Planner::FSM::KL);
+        // Lane change is needed only when it can improve ego car's situation
+        // Ego car should stay in one lane at least for a minimum duration before making lane change
         if (this->keep_lane_duration>MIN_KEEP_LANE_ON_DURATION && vehicle_ahead.gap < BUFFER_DISTANCE_AHEAD)
         {        
             if (this->ego_car.lane == 0)
@@ -246,15 +234,6 @@ vector<Planner::FSM> Planner::successor_states()
             states.push_back(Planner::FSM::PLCL);
             states.push_back(Planner::FSM::LCL);
         }
-
-
-        // }
-        // else
-        // {
-        // states.push_back("PLCL");
-        // states.push_back("PLCR");
-        // states.push_back("KL");
-        // }
         
     }
     else if (this->state == Planner::FSM::PLCR) {
@@ -264,62 +243,72 @@ vector<Planner::FSM> Planner::successor_states()
         states.push_back(Planner::FSM::PLCR);
         states.push_back(Planner::FSM::LCR);
         }
-
-        // }
-        // else
-        // {
-        // // states.push_back("PLCL");
-        // // states.push_back("PLCR");
-        // states.push_back("KL");
-        // }
     }
     else if (this->state == Planner::FSM::LCR){
-        if (this->lane_change_on_duration>MIN_LANE_CHANGE_ON_DURATION)
+        // Lane change state needs to be activated at least for a minimum duration to avoid occsillation
+        int new_target_lane = this->ego_car.lane + lane_direction.at(this->state);
+
+        // if (this->lane_change_on_duration>MIN_LANE_CHANGE_ON_DURATION)
+        // {
+        //     states.push_back(Planner::FSM::KL);
+        // }
+        // else if (this->prev_target_lane == new_target_lane)
+        // {
+        //     states.push_back(Planner::FSM::LCR); 
+        // }
+        // Check to avoid changing two lanes during the lane change state
+        if (this->prev_target_lane != new_target_lane)
         {
             states.push_back(Planner::FSM::KL);
         }
-        states.push_back(Planner::FSM::LCR);
-            // if (this->ego_car.lane != 2 ){states.push_back(Planner::FSM::LCR);}  
-        // else
-        // {
-        //     states.push_back(Planner::FSM::LCR);
-        // }
-        
-        
-    
+        else
+        {
+            states.push_back(Planner::FSM::LCR);
+            // Lane change state needs to be activated at least for a minimum duration to avoid state transition ocsillation
+            if (this->lane_change_on_duration>MIN_LANE_CHANGE_ON_DURATION)
+            {
+                states.push_back(Planner::FSM::KL);
+            }
+        }
 
-         
+                
     }
     else if (this->state == Planner::FSM::LCL){
-        if (this->lane_change_on_duration>MIN_LANE_CHANGE_ON_DURATION)
+
+        int new_target_lane = this->ego_car.lane + lane_direction.at(this->state);
+
+        // Lane change state needs to be activated at least for a minimum duration to avoid occsillation
+        // if (this->lane_change_on_duration>MIN_LANE_CHANGE_ON_DURATION)
+        // {
+            // states.push_back(Planner::FSM::KL);
+        // }
+    
+        // states.push_back(Planner::FSM::LCL);
+
+
+        // Check to avoid changing two lanes during the lane change state
+        if (this->prev_target_lane != new_target_lane)
         {
             states.push_back(Planner::FSM::KL);
         }
-    
-        states.push_back(Planner::FSM::LCL);
-
-        // else
-        // {
-        //     states.push_back(Planner::FSM::LCL);
-        // }
-        
-            
+        else
+        {
+            states.push_back(Planner::FSM::LCL);
+            // Lane change state needs to be activated at least for a minimum duration to avoid state transition ocsillation
+            if (this->lane_change_on_duration>MIN_LANE_CHANGE_ON_DURATION)
+            {
+                states.push_back(Planner::FSM::KL);
+            }
+        }
         
     }
     return states;
 
 };
 
-
-// vector<vector<double>> Planner::generate_next_trajectory()
-// {
-//     this->init_path();
-
-// };
 void Planner::realize_next_state(FSM new_state)
 {
     this->prev_state = this->state;
-    // std::cout<<"new state:"<<state<<std::endl;
     this->state = new_state;
 };
 
@@ -332,17 +321,15 @@ Planner::path Planner::keep_lane_path(){
     else {
         ref_speed = this->ego_car.get_kinematics(this->ego_car.lane);}
 
-    // If vehicle ahead are far away from ego car, speed limit will be considered as target speed 
+    // If vehicle ahead are far away enough from ego car, speed limit will be considered as target speed 
     if (vehicle_ahead.gap > DISTANCE_IGNORE_VEHICLE_AHEAD) target_speed = SPEED_LIMIT;
     else target_speed = ref_speed;
     // std::cout<<"speed target:"<<ref_vel<<std::endl;
     
     // double dist_add = 5;
     double dist_add = std::max(ref_speed,5.0)/49.5 *5 + 3;
-    // this->ego_car.v = ref_vel;
     auto trajectory = create_trajectory(this->ego_car.lane, ref_speed, dist_add);
     Planner::path path_KL{trajectory, ref_speed, target_speed, this->ego_car.lane};
-    // return create_trajectory(this->ego_car.lane, ref_vel);
     return path_KL;
 
 };
@@ -414,24 +401,10 @@ bool Planner::lane_change_safe(const Planner::FSM& new_state)
     auto vehicle_ahead = this->ego_car.get_vehicle_ahead(new_lane);
     auto vehicle_behind = this->ego_car.get_vehicle_behind(new_lane);
 
-    // if (vehicle_ahead.found && vehicle_ahead.gap > gap_ahead_lane_change)
-    
-    // Check if gap enough to change lane
-    if (vehicle_behind.gap < SECURITE_GAP_BEHIND_LANE_CHANGE)
-    {
-        lane_change_gap_enough = false;
-    }
-    if (vehicle_ahead.gap < SECURITE_GAP_AHEAD_LANE_CHANGE)
-    {
-        lane_change_gap_enough = false;
-    }
-
     // get speed setpoint to be applied if changing lane
     double new_lane_speed= ego_car.get_kinematics(new_lane);
     // predict ego car's position if changing lane
     double ego_car_s_pred = this->ego_car.s + double(this->prev_path_size) *.02*new_lane_speed/2.24;
-    double min_gap_ahead = 5;
-    double min_gap_behind = 12;
     bool collision_behind = false;
 
     // check if vehicle will risk to collide with vehicle behind in the new lane
@@ -440,7 +413,7 @@ bool Planner::lane_change_safe(const Planner::FSM& new_state)
             // predict vehicle postions by assuming constant speed 
             double vehicle_behind_s_pred = double(this->prev_path_size) *.02*vehicle_behind.vel/2.24 + vehicle_behind.s;
             
-            if ((ego_car_s_pred - vehicle_behind_s_pred) <= min_gap_behind)
+            if ((ego_car_s_pred - vehicle_behind_s_pred) <= SECURITE_GAP_BEHIND_LANE_CHANGE)
             {
                 collision_behind = true;
             }
@@ -451,7 +424,7 @@ bool Planner::lane_change_safe(const Planner::FSM& new_state)
     {       
             // predict vehicle postions by assuming constant speed
             double vehicle_ahead_s_pred = double(this->prev_path_size) *.02*vehicle_ahead.vel/2.24 + vehicle_ahead.s;
-            if ((vehicle_ahead_s_pred - ego_car_s_pred) < min_gap_ahead)
+            if ((vehicle_ahead_s_pred - ego_car_s_pred) < SECURITE_GAP_AHEAD_LANE_CHANGE)
             {
                 collision_ahead = true;
             }
@@ -459,15 +432,9 @@ bool Planner::lane_change_safe(const Planner::FSM& new_state)
 
     // check if vehicle ahead in current lane is too close for lane change
     auto vehicle_ahead_current_lane = this->ego_car.get_vehicle_ahead(this->ego_car.lane);
-    bool vehicle_ahead_too_close = vehicle_ahead_current_lane.gap < 8;
+    bool vehicle_ahead_too_close = vehicle_ahead_current_lane.gap < SECURITE_GAP_AHEAD_LANE_CHANGE;
 
-    // return collision;
-    // std::cout<<"vehicle close around:"<<ego_car.vehicle_close_around(new_lane)<<std::endl;
-    // std::cout<<"lane change gap is enough"<<lane_change_gap_enough<<std::endl;
-
-    // return lane_change_gap_enough && (! ego_car.vehicle_close_around(new_lane)) && ego_car.check_collision(new_lane);
-    // return lane_change_gap_enough && (! vehicle_ahead_too_close) && (!collision_behind) && (!collision_ahead);
-    return  (! vehicle_ahead_too_close) && (!collision_behind) && (!collision_ahead);
+    return  ! (vehicle_ahead_too_close || collision_behind || collision_ahead);
 
 };
 
@@ -482,28 +449,18 @@ double Planner::efficiency_cost(const double& real_speed, const double& target_s
 Planner::path Planner::generate_candidate_path(const Planner::FSM& new_state)
 {
     Planner::path candidate_path;
-    // vector<vector<double>> empty_trajectory;
 
     if (new_state == Planner::FSM::KL) {
         candidate_path = this->keep_lane_path();} 
     else if (new_state == Planner::FSM::LCL || new_state == Planner::FSM::LCR) {
-
-        // if (lane_change_emergency())
-        // {
-        //     candidate_path = this->keep_lane_path();
-
-        // }
-        // else {
             
-            candidate_path = this->lane_change_path(new_state);
-        // }
+        candidate_path = this->lane_change_path(new_state);
 
     }
     else if (new_state == Planner::FSM::PLCL || new_state == Planner::FSM::PLCR) {
-        // check if lane change is safe to allow lane change state
-        // if (lane_change_safe(new_state)) 
+
         candidate_path = this->prep_lane_change_path(new_state);
-        // else candidate_path = this->keep_lane_path();
+
     }
     return candidate_path;
 };
@@ -581,19 +538,7 @@ void Planner::get_keep_lane_duration()
     else 
     {
         this->keep_lane_duration+=1;
-    }
-
-
-    // if (this->prev_state != Planner::FSM::KL)
-    // {
-    //     this->keep_lane_duration =0;
-    // }
-    // else if (this->prev_state == Planner::FSM::KL && this->state == Planner::FSM::KL)
-    // {
-    //     this->keep_lane_duration+=1;
-    // }
-
-    
+    }    
     // std::cout<<"previous target lane:"<<this->prev_target_lane<<std::endl;
     // std::cout<<"actual target lane:"<<this->target_lane<<std::endl;
     // std::cout<<"in lane duration:"<<keep_lane_duration<<std::endl; 
@@ -620,41 +565,15 @@ double Planner::traffic_cost(const Planner::FSM& new_state)
         vehicle_behind = ego_car.get_vehicle_behind(new_lane);
     }
 
-    // closer the vehicle ahead or behind in the new lane, higher the cost
-    auto vehicle_ahead_dist = vehicle_ahead.gap;
-    if (vehicle_ahead_dist > DISTANCE_IGNORE_VEHICLE_AHEAD)
-    {
-        // vehicle_ahead_dist = std::numeric_limits<double>::max();
-        vehicle_ahead_dist = DISTANCE_IGNORE_VEHICLE_AHEAD;
-    }
+    
+    // A threshold will be used to check if vehicle ahead is far away enough 
+    auto vehicle_ahead_dist = std::min(vehicle_ahead.gap, DISTANCE_IGNORE_VEHICLE_AHEAD);
 
-    // else if (vehicle_ahead_dist<10)
-    // {
-    //     vehicle_ahead_dist = 0.1*vehicle_ahead_dist;
-    // }
-
-    // auto vehicle_behind_dist = vehicle_behind.gap;
-    // if (vehicle_behind_dist > 15)
-    // {
-        // vehicle_behind_dist = std::numeric_limits<double>::max();
-        // return 1/(vehicle_ahead_dist+1);
+    // Caculate the traffic cost ahead
+    // Further the vehicle ahead in the target lane, further the ego car can go, lower the cost
+    // An offset equals to buffer distance is taken into account in the cost funciton to avoid unnecessary lane change if vehicle ahead in the new lane is not far away enough
     if (vehicle_ahead_dist > BUFFER_DISTANCE_AHEAD)    return (DISTANCE_IGNORE_VEHICLE_AHEAD - vehicle_ahead_dist - BUFFER_DISTANCE_AHEAD)/DISTANCE_IGNORE_VEHICLE_AHEAD;
     else return (DISTANCE_IGNORE_VEHICLE_AHEAD - vehicle_ahead_dist)/DISTANCE_IGNORE_VEHICLE_AHEAD;
-    // }
-
-    // else
-    // {
-    //     // vehicle_behind_dist = 0.1*vehicle_behind_dist;
-    //     // return (1/(vehicle_ahead_dist+1) + 0.2*1/(vehicle_behind_dist+1)); 
-    //     // return (DISTANCE_IGNORE_VEHICLE_AHEAD-vehicle_ahead_dist)/DISTANCE_IGNORE_VEHICLE_AHEAD + (15-vehicle_behind_dist)/15 * 0.1;
-    //     return (DISTANCE_IGNORE_VEHICLE_AHEAD-vehicle_ahead_dist)/DISTANCE_IGNORE_VEHICLE_AHEAD;
-
-    // }
-
-        // return (1/(vehicle_ahead_dist+1) + 0.2*1/(vehicle_behind_dist+1));   
-               
-
-    
 
 }
 
@@ -698,16 +617,6 @@ double Planner::maneuver_cost(const Planner::FSM& new_state)
 
 }
 
-
-bool Planner::lane_change_emergency()
-{
-    // If during a lane change a vehicle suddenlly enter into the new lane, a emergency alert should raise
-    auto vehicle_ahead = this->ego_car.get_vehicle_ahead(this->ego_car.lane);
-    return vehicle_ahead.gap < 10;
-
-};
-
-
 double Planner::reach_goal_cost(const Planner::FSM& new_state)
 {
     int new_lane;
@@ -715,6 +624,8 @@ double Planner::reach_goal_cost(const Planner::FSM& new_state)
     else new_lane = this->ego_car.lane + lane_direction.at(new_state);
     double dist_ahead = 0.0;
     auto best_lane = this->ego_car.lane;
+
+    // find the lane where vechile ahead has the longest distance as goal lane
     for (auto lane=0; lane<3; ++lane)
     {
         auto vehicle_ahead = ego_car.get_vehicle_ahead(lane);

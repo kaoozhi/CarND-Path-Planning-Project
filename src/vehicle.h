@@ -12,11 +12,6 @@
 
 class Vehicle{
     public:
-
-        // enum FSM {CS,KL,PLCL,LCL,PLCR,LCR};
-        // FSM state;
-        // FSM prev_state;
-        // };
         
         double s;
         double v;
@@ -33,13 +28,10 @@ class Vehicle{
         struct prediction{bool found; double vel; double gap; double s; double d;};
 
 
-        // minimum duration to keep in current lane before lane change
-        // Vehicle(double s_, double v_, double d_, double x_, double y_, double yaw_);
         Vehicle();
         virtual ~Vehicle();
         double get_kinematics(const int& lane);
         void update(const double& s_, const double& v_, const double& d_, const double& x_, const double& y_, const double& yaw_, const int& prev_path_size_, const nlohmann::json& sensor_fusion_);
-        // double get_ahead_speed(const int& lane);
         Vehicle::prediction get_vehicle_ahead(const int& lane);
         // Vehicle::prediction get_vehicle_ahead_debug(const int& lane);
         Vehicle::prediction get_vehicle_behind(const int& lane);
