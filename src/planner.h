@@ -69,7 +69,6 @@ class Planner{
         Planner::path generate_candidate_path(const Planner::FSM& new_state);
         
         bool lane_change_safe(const Planner::FSM& new_state);
-        bool lane_change_emergency();
         double efficiency_cost(const double& real_speed, const double& target_speed);
         double traffic_cost(const Planner::FSM& new_state);
         double maneuver_cost(const Planner::FSM& new_state);
