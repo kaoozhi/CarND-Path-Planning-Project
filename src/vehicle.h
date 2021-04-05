@@ -33,10 +33,7 @@ class Vehicle{
         double get_kinematics(const int& lane);
         void update(const double& s_, const double& v_, const double& d_, const double& x_, const double& y_, const double& yaw_, const int& prev_path_size_, const nlohmann::json& sensor_fusion_);
         Vehicle::prediction get_vehicle_ahead(const int& lane);
-        // Vehicle::prediction get_vehicle_ahead_debug(const int& lane);
         Vehicle::prediction get_vehicle_behind(const int& lane);
-        // bool vehicle_close_around(const int& lane);
-        // bool check_collision(const int& lane);
         int get_best_lane();
         void cost_function();
         

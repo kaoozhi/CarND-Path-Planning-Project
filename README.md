@@ -1,6 +1,6 @@
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
-   
+
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).  
 
@@ -43,13 +43,13 @@ Here is the data provided from the Simulator to the C++ Program
 #### Previous path data given to the Planner
 
 //Note: Return the previous list but with processed points removed, can be a nice tool to show how far along
-the path has processed since last time. 
+the path has processed since last time.
 
 ["previous_path_x"] The previous list of x points previously given to the simulator
 
 ["previous_path_y"] The previous list of y points previously given to the simulator
 
-#### Previous path's end s and d values 
+#### Previous path's end s and d values
 
 ["end_path_s"] The previous list's last point's frenet s value
 
@@ -57,7 +57,7 @@ the path has processed since last time.
 
 #### Sensor Fusion Data, a list of all other car's attributes on the same side of the road. (No Noise)
 
-["sensor_fusion"] A 2d vector of cars and then that car's [car's unique ID, car's x position in map coordinates, car's y position in map coordinates, car's x velocity in m/s, car's y velocity in m/s, car's s position in frenet coordinates, car's d position in frenet coordinates. 
+["sensor_fusion"] A 2d vector of cars and then that car's [car's unique ID, car's x position in map coordinates, car's y position in map coordinates, car's x velocity in m/s, car's y velocity in m/s, car's s position in frenet coordinates, car's d position in frenet coordinates.
 
 ## Details
 
@@ -87,12 +87,12 @@ A really helpful resource for doing this project and creating smooth trajectorie
   * Run either `install-mac.sh` or `install-ubuntu.sh`.
   * If you install from source, checkout to commit `e94b6e1`, i.e.
     ```
-    git clone https://github.com/uWebSockets/uWebSockets 
+    git clone https://github.com/uWebSockets/uWebSockets
     cd uWebSockets
     git checkout e94b6e1
     ```
 
-## Editor Settings
+<!-- ## Editor Settings
 
 We've purposefully kept editor configuration files out of this repo in order to
 keep it as simple and environment agnostic as possible. However, we recommend
@@ -103,7 +103,7 @@ using the following settings:
 
 ## Code Style
 
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
+Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html). -->
 
 ## Project Instructions and Rubric
 
@@ -111,7 +111,7 @@ Note: regardless of the changes you make, your project must be buildable using
 cmake and make!
 
 
-## Call for IDE Profiles Pull Requests
+<!-- ## Call for IDE Profiles Pull Requests
 
 Help your fellow students!
 
@@ -138,8 +138,47 @@ instructions to copy files to a new location to get picked up by the IDE, but
 that's just a guess.
 
 One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
+still be compilable with cmake and make./ -->
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+<!-- ## How to write a README
+A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777). -->
 
+## Model Documentation
+### Finite state machine
+The path planner is based on a finite state machine which determines the autonomous car's driving behaviour on the highway. The state machine is composed of the following six states:
+* CS - state starts the car
+* KL - state keeps car driving in the lane
+* PLCR - state prepares lane change to the right
+* PLCL - state prepares lane change to the left
+* LCR - state changes lane to the right
+* LCL - state changes lane to the left
+
+<img src="FSM.jpeg"/>
+
+### Cost function
+Once the car started from CS to KL state, transition between states is conditioned by a multi-objective cost function. In general, the state machine will always move from the current state to the next state which has the lowest cost among all possible new states.
+For a given state, the cost function evaluates the weighted sum of:
+* traffic ahead cost - further the car ahead in the intended lane, lower the cost
+* Efficiency cost - computes the difference between real speed/speed limit plus the difference between intended speed/speed limit, larger the real speed and intended speed, lower the cost. The real and intended speed will be determined regarding traffic speed in the target lane, acceleration/deceleration limit and road speed limit.
+* Maneuver cost - in terms of maneuver, lane change has a higher maneuver cost than keep lane while left lane change is preferred with a lower cost compared to right lane change
+* reach goal cost - when traffic is heavy around, the planner will search the least busy lane as the goal lane to reach, so closer to the goal lane lower the cost. This will help the car to get close to the fastest lane more quickly.
+The weights associated with each cost are manually tuned to guarantee that ego car changes lane only when it makes sense.
+
+In particular, transitions from KL to PLCL/PLCR, PLCL to LCL and PLCR to LCR are only possible when the safe lane change conditions are verified:
+*  no collision with the car ahead in the current lane
+*  no collision with the car ahead & behind in the new lane
+
+### Trajectory generation
+The planner will than generate the associated trajectory to a new state using cubic spline interpolation method. There are three types of trajectories: keep lane, prepare lane change and lane change. Given the target lane of the new state, the lateral position d in the Frenet coordinate is defined as d = target_lane*4+2. Then for the same d position, I create three breakpoints with progressive s position from ego car's current position. The interval of s position between each breakpoint is a function proportional to ego car's target velocity with tuneable parameters specific to each type of trajectories. Those final parameters are iteratively tuned assuring respect of acceleration/jerk limitation and smoothness of all types of trajectory.
+
+I append the three new breakpoints to the last two points of previous path and then convert them into local frame of the end point of previous path, the five points are base grid points to be interpolated using cubic spline.
+By setting a target longitudinal position for the new trajectory, I can first interpolate the corresponding target lateral position from the base grid points and obtain the target distance in local frame of the end point of previous path. Knowing the target velocity, the target distance, I can easily get the spline points' interval in longitudinal direction. Finally I increment the longitudinal spline points and interpolate their corresponding lateral positions and switch back to global frame in order to complete the remaining part of the previous path.
+
+<img src="path.jpeg"/>
+
+The planner will realize the best state and send its associated path to the simulator.
+
+### Results
+The actual implementation of path planner is able to drive the car more than 65miles without incident
+
+<img src="result.png"/>
