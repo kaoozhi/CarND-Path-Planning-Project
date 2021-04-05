@@ -158,10 +158,11 @@ The path planner is based on a finite state machine which determines the autonom
 ### Cost function
 Once the car started from CS to KL state, transition between states is conditioned by a multi-objective cost function. In general, the state machine will always move from the current state to the next state which has the lowest cost among all possible new states.
 For a given state, the cost function evaluates the weighted sum of:
-* traffic ahead cost - further the car ahead in the intended lane, lower the cost
+* Traffic ahead cost - further the car ahead in the intended lane, lower the cost
 * Efficiency cost - computes the difference between real speed/speed limit plus the difference between intended speed/speed limit, larger the real speed and intended speed, lower the cost. The real and intended speed will be determined regarding traffic speed in the target lane, acceleration/deceleration limit and road speed limit.
 * Maneuver cost - in terms of maneuver, lane change has a higher maneuver cost than keep lane while left lane change is preferred with a lower cost compared to right lane change
-* reach goal cost - when traffic is heavy around, the planner will search the least busy lane as the goal lane to reach, so closer to the goal lane lower the cost. This will help the car to get close to the fastest lane more quickly.
+* Reach goal cost - when traffic is heavy around, the planner will search the least busy lane as the goal lane to reach, so closer to the goal lane lower the cost. This will help the car to get close to the fastest lane more quickly.
+
 The weights associated with each cost are manually tuned to guarantee that ego car changes lane only when it makes sense.
 
 In particular, transitions from KL to PLCL/PLCR, PLCL to LCL and PLCR to LCR are only possible when the safe lane change conditions are verified:
@@ -169,7 +170,7 @@ In particular, transitions from KL to PLCL/PLCR, PLCL to LCL and PLCR to LCR are
 *  no collision with the car ahead & behind in the new lane
 
 ### Trajectory generation
-The planner will than generate the associated trajectory to a new state using cubic spline interpolation method. There are three types of trajectories: keep lane, prepare lane change and lane change. Given the target lane of the new state, the lateral position d in the Frenet coordinate is defined as d = target_lane*4+2. Then for the same d position, I create three breakpoints with progressive s position from ego car's current position. The interval of s position between each breakpoint is a function proportional to ego car's target velocity with tuneable parameters specific to each type of trajectories. Those final parameters are iteratively tuned assuring respect of acceleration/jerk limitation and smoothness of all types of trajectory.
+The planner will then generate the associated trajectory to a new state using cubic spline interpolation method. There are three types of trajectories: keep lane, prepare lane change and lane change. Given the target lane of the new state, the lateral position d in the Frenet coordinate is defined as d = target_lane*4+2. Then for the same d position, I create three breakpoints with progressive s position from ego car's current position. The interval of s position between each breakpoint is a function proportional to ego car's target velocity with tuneable parameters specific to each type of trajectories. Those final parameters are iteratively tuned assuring respect of acceleration/jerk limitation and smoothness of all types of trajectory.
 
 I append the three new breakpoints to the last two points of previous path and then convert them into local frame of the end point of previous path, the five points are base grid points to be interpolated using cubic spline.
 By setting a target longitudinal position for the new trajectory, I can first interpolate the corresponding target lateral position from the base grid points and obtain the target distance in local frame of the end point of previous path. Knowing the target velocity, the target distance, I can easily get the spline points' interval in longitudinal direction. Finally I increment the longitudinal spline points and interpolate their corresponding lateral positions and switch back to global frame in order to complete the remaining part of the previous path.
